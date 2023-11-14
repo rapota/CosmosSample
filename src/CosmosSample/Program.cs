@@ -1,4 +1,6 @@
 ﻿using Microsoft.Azure.Cosmos;
+using Newtonsoft.Json.Linq;
+using System.ComponentModel;
 
 namespace CosmosSample
 {
@@ -8,7 +10,7 @@ namespace CosmosSample
         {
             Console.WriteLine("Hello, World!");
 
-            CosmosClientOptions options = new ()
+            CosmosClientOptions options = new()
             {
                 HttpClientFactory = () => new HttpClient(new HttpClientHandler()
                 {
@@ -25,30 +27,21 @@ namespace CosmosSample
                 , clientOptions: options
             );
 
-            Database database = await client.CreateDatabaseIfNotExistsAsync(
-                id: "cosmicworks",
-                throughput: 400
-            );
+            await using (Benchmark benchmark = new Benchmark(client, sourceSystemCount: 10, targetSystemsCount: 10))
+            {
+                //await benchmark.ResetContainerAsync();
+                //await benchmark.SeedDataAsync(10);
 
-            Container container = await database.CreateContainerIfNotExistsAsync(
-                id: "products",
-                partitionKeyPath: "/id"
-            );
+                await benchmark.CreateContainerAsync();
 
-            var item = new Product("68719518371", "Kiama classic surfboard", 123);
+                await benchmark.QueryAllDataAsync();
 
-            await container.UpsertItemAsync(item);
+                string id = Guid.Empty.ToString();
+                //ItemResponse<TranslationRule> readResponse = await benchmark.Container!.ReadItemAsync<TranslationRule>(id, new PartitionKey("/SourceSystem"));
+                //ItemResponse<JObject> result = await benchmark.Container!.ReadItemAsync<JObject>(id, PartitionKey.None);
+            }
 
-            var query = new QueryDefinition(
-                    query: "SELECT * FROM products p WHERE p.category = @category"
-                )
-                .WithParameter("@category", "gear-surf-surfboards");
+            Console.WriteLine("Done.");
         }
     }
-
-    public record Product(
-        string id,
-        string name,
-        int quantity
-    );
 }
