@@ -31,6 +31,7 @@ public class TranslationRuleFactory
         return _fixture.Build<TranslationRule>()
             .With(x => x.SourceSystem, sourceSystem)
             .With(x => x.TargetSystem, targetSystem)
+            .With(x => x.PartitionKey, sourceSystem + targetSystem)
             .Create();
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using Azure;
+using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json.Linq;
 using System.ComponentModel;
 
@@ -31,35 +32,38 @@ namespace CosmosSample
             );
 
             // By id
+            Console.WriteLine("By id.");
             await using (Benchmark benchmark = new Benchmark(client, SourceSystemCount, TargetSystemsCount, useIdAsPartitionKey: true))
             {
                 await benchmark.CreateContainerAsync(false);
                 //await benchmark.CreateContainerAsync(true);
                 //await benchmark.SeedDataAsync(1000);
 
-                //await benchmark.QueryAllDataAsync();
+                await benchmark.QueryAllDataAsync();
 
-                await benchmark.QueryBySourceTargetDataAsync("SourceSystem-1", "TargetSystem-1");
+                await benchmark.QueryBySourceTargetDataAsync("SourceSystem-1", "TargetSystem-1", usePartitionKey: false);
 
                 //string id = Guid.Empty.ToString();
-                //ItemResponse<TranslationRule> readResponse = await benchmark.Container!.ReadItemAsync<TranslationRule>(id, new PartitionKey("/SourceSystem"));
-                //ItemResponse<JObject> result = await benchmark.Container!.ReadItemAsync<JObject>(id, PartitionKey.None);
+                //ItemResponse<TranslationRule> readResponse = await benchmark.Container!.ReadItemAsync<TranslationRule>(id, PartitionKey.Null);
+                //Console.WriteLine($"Found item: {readResponse.Resource} {readResponse.RequestCharge} RUs");
             }
-            
-            // By system
+
+            // By key
+            Console.WriteLine();
+            Console.WriteLine("By key.");
             await using (Benchmark benchmark = new Benchmark(client, SourceSystemCount, TargetSystemsCount, useIdAsPartitionKey: false))
             {
                 await benchmark.CreateContainerAsync(false);
                 //await benchmark.CreateContainerAsync(true);
                 //await benchmark.SeedDataAsync(1000);
 
-                //await benchmark.QueryAllDataAsync();
+                await benchmark.QueryAllDataAsync();
 
-                await benchmark.QueryBySourceTargetDataAsync("SourceSystem-1", "TargetSystem-1");
+                await benchmark.QueryBySourceTargetDataAsync("SourceSystem-1", "TargetSystem-1", usePartitionKey: true);
 
                 //string id = Guid.Empty.ToString();
-                //ItemResponse<TranslationRule> readResponse = await benchmark.Container!.ReadItemAsync<TranslationRule>(id, new PartitionKey("/SourceSystem"));
-                //ItemResponse<JObject> result = await benchmark.Container!.ReadItemAsync<JObject>(id, PartitionKey.None);
+                //ItemResponse<TranslationRule> readResponse = await benchmark.Container!.ReadItemAsync<TranslationRule>(id, new PartitionKey("SourceSystem-8" + "TargetSystem-5"));
+                //Console.WriteLine($"Found item: {readResponse.Resource} {readResponse.RequestCharge} RUs");
             }
 
             Console.WriteLine("Done.");

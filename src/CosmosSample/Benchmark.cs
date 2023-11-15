@@ -10,7 +10,7 @@ public sealed class Benchmark : IAsyncDisposable
     private readonly CosmosClient _client;
     private readonly TranslationRuleFactory _translationRuleFactory;
     private readonly string _containerName;
-    private string _partitionKey;
+    private readonly string _partitionKeyPath;
 
     public Container? Container { get; private set; }
 
@@ -19,9 +19,9 @@ public sealed class Benchmark : IAsyncDisposable
         _client = client;
         _translationRuleFactory = new TranslationRuleFactory(sourceSystemCount, targetSystemsCount);
 
-        _partitionKey = useIdAsPartitionKey
+        _partitionKeyPath = useIdAsPartitionKey
             ? "/id"
-            : "/SourceSystem";
+            : "/PartitionKey";
 
         _containerName = useIdAsPartitionKey
             ? "transtationid"
@@ -58,7 +58,7 @@ public sealed class Benchmark : IAsyncDisposable
 
         ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(
             id: _containerName,
-            partitionKeyPath: _partitionKey
+            partitionKeyPath: _partitionKeyPath
         );
         Container = containerResponse.Container;
     }
@@ -69,10 +69,10 @@ public sealed class Benchmark : IAsyncDisposable
         for (int i = 0; i < count; i++)
         {
             TranslationRule translationRule = _translationRuleFactory.Create();
-            //if (i == 0)
-            //{
-            //    translationRule.id = Guid.Empty;
-            //}
+            if (i == 0)
+            {
+                translationRule.id = Guid.Empty;
+            }
 
             ItemResponse<TranslationRule> itemResponse = await Container!.CreateItemAsync(translationRule);
             //await Container!.CreateItemAsync(
@@ -85,7 +85,7 @@ public sealed class Benchmark : IAsyncDisposable
         sw.Stop();
         Console.WriteLine("Seeded {0} items in {1}.", count, sw.Elapsed);
     }
-    
+
     public async Task SeedDataAsync2(int count)
     {
         List<TranslationRule> translationRules = Enumerable.Range(1, count)
@@ -119,6 +119,7 @@ public sealed class Benchmark : IAsyncDisposable
 
     public async Task QueryAllDataAsync()
     {
+        Console.WriteLine("Gat all.");
         using FeedIterator<TranslationRule> feed = Container!.GetItemQueryIterator<TranslationRule>(queryText: $"SELECT * FROM {_containerName}");
         while (feed.HasMoreResults)
         {
@@ -131,16 +132,26 @@ public sealed class Benchmark : IAsyncDisposable
         }
     }
 
-    public async Task QueryBySourceTargetDataAsync(string sourceSystem, string targetSystem)
+    public async Task QueryBySourceTargetDataAsync(string sourceSystem, string targetSystem, bool usePartitionKey)
     {
+        Console.WriteLine("Gat by source and target.");
+
         QueryDefinition parameterizedQuery = new QueryDefinition(
                 query: $"SELECT * FROM {_containerName} p WHERE p.SourceSystem = @ss AND p.TargetSystem = @ts"
             )
             .WithParameter("@ss", sourceSystem)
             .WithParameter("@ts", targetSystem);
 
+        QueryRequestOptions? qo = usePartitionKey
+            ? new QueryRequestOptions
+                {
+                    PartitionKey = new PartitionKey(sourceSystem + targetSystem)
+                }
+            : null;
 
-        using FeedIterator<TranslationRule> feed = Container!.GetItemQueryIterator<TranslationRule>(queryDefinition: parameterizedQuery);
+        using FeedIterator<TranslationRule> feed = Container!.GetItemQueryIterator<TranslationRule>(
+            queryDefinition: parameterizedQuery,
+            requestOptions: qo);
         while (feed.HasMoreResults)
         {
             FeedResponse<TranslationRule> response = await feed.ReadNextAsync();

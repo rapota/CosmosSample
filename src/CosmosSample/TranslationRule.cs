@@ -4,6 +4,8 @@ public sealed class TranslationRule
 {
     public Guid id { get; set; }
 
+    public string PartitionKey { get; set; } = string.Empty;
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset UpdatedAt { get; set; }
@@ -27,8 +29,6 @@ public sealed class TranslationRule
     public bool Concat { get; set; }
 
     public bool IsMapped { get; set; }
-
-    public string? PartitionKey { get; set; }
 
     public override string ToString() => SourceSystem + " -> " + TargetSystem;
 }
