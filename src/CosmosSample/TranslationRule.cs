@@ -29,4 +29,6 @@ public sealed class TranslationRule
     public bool IsMapped { get; set; }
 
     public string? PartitionKey { get; set; }
+
+    public override string ToString() => SourceSystem + " -> " + TargetSystem;
 }

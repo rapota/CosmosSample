@@ -6,6 +6,9 @@ namespace CosmosSample
 {
     internal class Program
     {
+        private const int SourceSystemCount = 10;
+        private const int TargetSystemsCount = 10;
+
         static async Task Main(string[] args)
         {
             Console.WriteLine("Hello, World!");
@@ -27,16 +30,34 @@ namespace CosmosSample
                 , clientOptions: options
             );
 
-            await using (Benchmark benchmark = new Benchmark(client, sourceSystemCount: 10, targetSystemsCount: 10))
+            // By id
+            await using (Benchmark benchmark = new Benchmark(client, SourceSystemCount, TargetSystemsCount, useIdAsPartitionKey: true))
             {
-                //await benchmark.ResetContainerAsync();
-                //await benchmark.SeedDataAsync(10);
+                await benchmark.CreateContainerAsync(false);
+                //await benchmark.CreateContainerAsync(true);
+                //await benchmark.SeedDataAsync(1000);
 
-                await benchmark.CreateContainerAsync();
+                //await benchmark.QueryAllDataAsync();
 
-                await benchmark.QueryAllDataAsync();
+                await benchmark.QueryBySourceTargetDataAsync("SourceSystem-1", "TargetSystem-1");
 
-                string id = Guid.Empty.ToString();
+                //string id = Guid.Empty.ToString();
+                //ItemResponse<TranslationRule> readResponse = await benchmark.Container!.ReadItemAsync<TranslationRule>(id, new PartitionKey("/SourceSystem"));
+                //ItemResponse<JObject> result = await benchmark.Container!.ReadItemAsync<JObject>(id, PartitionKey.None);
+            }
+            
+            // By system
+            await using (Benchmark benchmark = new Benchmark(client, SourceSystemCount, TargetSystemsCount, useIdAsPartitionKey: false))
+            {
+                await benchmark.CreateContainerAsync(false);
+                //await benchmark.CreateContainerAsync(true);
+                //await benchmark.SeedDataAsync(1000);
+
+                //await benchmark.QueryAllDataAsync();
+
+                await benchmark.QueryBySourceTargetDataAsync("SourceSystem-1", "TargetSystem-1");
+
+                //string id = Guid.Empty.ToString();
                 //ItemResponse<TranslationRule> readResponse = await benchmark.Container!.ReadItemAsync<TranslationRule>(id, new PartitionKey("/SourceSystem"));
                 //ItemResponse<JObject> result = await benchmark.Container!.ReadItemAsync<JObject>(id, PartitionKey.None);
             }
