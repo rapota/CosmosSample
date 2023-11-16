@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Linq;
 
 namespace CosmosSample;
 
@@ -69,10 +70,10 @@ public sealed class Benchmark : IAsyncDisposable
         for (int i = 0; i < count; i++)
         {
             TranslationRule translationRule = _translationRuleFactory.Create();
-            if (i == 0)
-            {
-                translationRule.id = Guid.Empty;
-            }
+            //if (i == 0)
+            //{
+            //    translationRule.id = Guid.Empty;
+            //}
 
             ItemResponse<TranslationRule> itemResponse = await Container!.CreateItemAsync(translationRule);
             //await Container!.CreateItemAsync(
@@ -119,7 +120,7 @@ public sealed class Benchmark : IAsyncDisposable
 
     public async Task QueryAllDataAsync()
     {
-        Console.WriteLine("Gat all.");
+        Console.WriteLine("Query all.");
         using FeedIterator<TranslationRule> feed = Container!.GetItemQueryIterator<TranslationRule>(queryText: $"SELECT * FROM {_containerName}");
         while (feed.HasMoreResults)
         {
@@ -134,7 +135,7 @@ public sealed class Benchmark : IAsyncDisposable
 
     public async Task QueryBySourceTargetDataAsync(string sourceSystem, string targetSystem, bool usePartitionKey)
     {
-        Console.WriteLine("Gat by source and target.");
+        Console.WriteLine("Get by source and target.");
 
         QueryDefinition parameterizedQuery = new QueryDefinition(
                 query: $"SELECT * FROM {_containerName} p WHERE p.SourceSystem = @ss AND p.TargetSystem = @ts"
@@ -144,9 +145,9 @@ public sealed class Benchmark : IAsyncDisposable
 
         QueryRequestOptions? qo = usePartitionKey
             ? new QueryRequestOptions
-                {
-                    PartitionKey = new PartitionKey(sourceSystem + targetSystem)
-                }
+            {
+                PartitionKey = new PartitionKey(sourceSystem + targetSystem)
+            }
             : null;
 
         using FeedIterator<TranslationRule> feed = Container!.GetItemQueryIterator<TranslationRule>(
@@ -158,7 +159,28 @@ public sealed class Benchmark : IAsyncDisposable
             foreach (TranslationRule? item in response)
             {
                 Console.WriteLine($"Found item: {item.id} {item} {response.RequestCharge} RUs");
-                break;
+                //break;
+            }
+        }
+    }
+
+    public async Task LinqQueryBySourceTargetDataAsync(string sourceSystem, string targetSystem)
+    {
+        Console.WriteLine("Ling by source and target.");
+
+        IOrderedQueryable<TranslationRule> linqQueryable = Container!.GetItemLinqQueryable<TranslationRule>();
+
+        using FeedIterator<TranslationRule> feed = linqQueryable
+            .Where(x => x.SourceSystem == sourceSystem && x.TargetSystem == targetSystem)
+            .ToFeedIterator();
+
+        while (feed.HasMoreResults)
+        {
+            FeedResponse<TranslationRule> response = await feed.ReadNextAsync();
+            foreach (TranslationRule? item in response)
+            {
+                Console.WriteLine($"Found item: {item.id} {item} {response.RequestCharge} RUs");
+                //break;
             }
         }
     }
