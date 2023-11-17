@@ -70,10 +70,12 @@ public sealed class Benchmark : IAsyncDisposable
         for (int i = 0; i < count; i++)
         {
             TranslationRule translationRule = _translationRuleFactory.Create();
-            //if (i == 0)
-            //{
-            //    translationRule.id = Guid.Empty;
-            //}
+            if (i == 0)
+            {
+                translationRule.id = Guid.Empty;
+                translationRule.SourceSystem = "SourceSystem-1";
+                translationRule.TargetSystem = "TargetSystem-1";
+            }
 
             ItemResponse<TranslationRule> itemResponse = await Container!.CreateItemAsync(translationRule);
             //await Container!.CreateItemAsync(
@@ -159,7 +161,7 @@ public sealed class Benchmark : IAsyncDisposable
             foreach (TranslationRule? item in response)
             {
                 Console.WriteLine($"Found item: {item.id} {item} {response.RequestCharge} RUs");
-                //break;
+                break;
             }
         }
     }
@@ -180,7 +182,7 @@ public sealed class Benchmark : IAsyncDisposable
             foreach (TranslationRule? item in response)
             {
                 Console.WriteLine($"Found item: {item.id} {item} {response.RequestCharge} RUs");
-                //break;
+                break;
             }
         }
     }
